@@ -1,4 +1,4 @@
-# Sebastian Raschka 2014-2017
+# sEBASTIAN rASCHKA 2014-2017
 # mlxtend Machine Learning Library Extensions
 #
 # Algorithm for sequential feature selection.
@@ -125,7 +125,8 @@ class SequentialFeatureSelector(BaseEstimator, MetaEstimatorMixin):
                  verbose=0, scoring=None,
                  cv=5, skip_if_stuck=True, n_jobs=1,
                  pre_dispatch='2*n_jobs',
-                 clone_estimator=True):
+                 clone_estimator=True,
+                 cv_weights=None):
 
         self.estimator = estimator
         self.k_features = k_features
@@ -133,6 +134,7 @@ class SequentialFeatureSelector(BaseEstimator, MetaEstimatorMixin):
         self.floating = floating
         self.pre_dispatch = pre_dispatch
         self.cv = cv
+        self.cv_weights = cv_weights
         self.n_jobs = n_jobs
         self.named_est = {key: value for key, value in
                           _name_estimators([self.estimator])}
@@ -251,7 +253,7 @@ class SequentialFeatureSelector(BaseEstimator, MetaEstimatorMixin):
             while k != k_to_select:
                 prev_subset = set(k_idx)
                 if self.forward:
-                    k_idx, k_score, cv_scores = self._inclusion(
+                    k_idx, k_score, cv_scores, all_scores = self._inclusion(
                         orig_set=orig_set,
                         subset=prev_subset,
                         X=X,
@@ -292,7 +294,8 @@ class SequentialFeatureSelector(BaseEstimator, MetaEstimatorMixin):
                     self.subsets_[k] = {
                         'feature_idx': k_idx,
                         'cv_scores': cv_scores,
-                        'avg_score': k_score
+                        'avg_score': k_score,
+                        'all_scores': all_scores
                     }
 
                 # k_idx must be a set otherwise different permutations
@@ -345,7 +348,7 @@ class SequentialFeatureSelector(BaseEstimator, MetaEstimatorMixin):
         all_avg_scores = []
         all_cv_scores = []
         all_subsets = []
-        res = (None, None, None)
+        res = (None, None, None, None)
         remaining = orig_set - subset
         if remaining:
             features = len(remaining)
@@ -357,14 +360,15 @@ class SequentialFeatureSelector(BaseEstimator, MetaEstimatorMixin):
                             for feature in remaining)
 
             for new_subset, cv_scores in work:
-                all_avg_scores.append(cv_scores.mean())
+                all_avg_scores.append(np.average(cv_scores, weights=self.cv_weights))
                 all_cv_scores.append(cv_scores)
                 all_subsets.append(new_subset)
 
             best = np.argmax(all_avg_scores)
             res = (all_subsets[best],
                    all_avg_scores[best],
-                   all_cv_scores[best])
+                   all_cv_scores[best],
+                   all_avg_scores)
         return res
 
     def _exclusion(self, feature_set, X, y, fixed_feature=None):
