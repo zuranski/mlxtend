@@ -368,7 +368,7 @@ class SequentialFeatureSelector(BaseEstimator, MetaEstimatorMixin):
             res = (all_subsets[best],
                    all_avg_scores[best],
                    all_cv_scores[best],
-                   all_avg_scores)
+                   list(zip(all_subsets, all_avg_scores)))
         return res
 
     def _exclusion(self, feature_set, X, y, fixed_feature=None):
