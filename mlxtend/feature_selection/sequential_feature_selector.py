@@ -172,7 +172,7 @@ class SequentialFeatureSelector(BaseEstimator, MetaEstimatorMixin):
         # don't mess with this unless testing
         self._TESTING_INTERRUPT_MODE = False
 
-    def fit(self, X, y):
+    def fit(self, X, y, feats=()):
         """Perform feature selection and learn model from training data.
 
         Parameters
@@ -233,7 +233,8 @@ class SequentialFeatureSelector(BaseEstimator, MetaEstimatorMixin):
         if self.forward:
             if select_in_range:
                 k_to_select = self.k_features[1]
-            k_idx = ()
+            #k_idx = ()
+            k_idx = set(feats)
             k = 0
         else:
             if select_in_range:
@@ -250,7 +251,7 @@ class SequentialFeatureSelector(BaseEstimator, MetaEstimatorMixin):
         best_subset = None
         k_score = 0
         try:
-            while k != k_to_select:
+            while k != k_to_select + len(feats):
                 prev_subset = set(k_idx)
                 if self.forward:
                     k_idx, k_score, cv_scores, all_scores = self._inclusion(
